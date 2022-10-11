@@ -1,0 +1,282 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+from plotly.subplots import make_subplots
+from datetime import datetime
+
+
+# In[2]:
+
+
+covid_df =pd.read_csv("C:/Users/DELL/Desktop/samaksh.csv")
+covid_df.head()
+
+
+# In[3]:
+
+
+covid_df.describe
+
+
+# In[4]:
+
+
+covid_df.drop(["Sno","Time","ConfirmedIndianNational","ConfirmedForeignNational"], inplace= True , axis = 1)
+
+
+# In[5]:
+
+
+covid_df.head(10)
+
+
+# In[6]:
+
+
+# total num of active cases = total num of confirmed cases -{sum of cured cases + death reported}
+
+
+# In[7]:
+
+
+covid_df['Active_cases']=covid_df['Confirmed']-(covid_df['Cured']+covid_df['Deaths'])
+
+
+# In[8]:
+
+
+covid_df
+
+
+# In[9]:
+
+
+statewise = pd.pivot_table(covid_df, values=["Confirmed","Deaths","Cured"],index= "State/UnionTerritory", aggfunc=max)
+
+
+# In[10]:
+
+
+statewise['recovery rate']=statewise['Cured']*100/statewise['Confirmed']
+
+
+# In[11]:
+
+
+statewise.tail()
+
+
+# In[12]:
+
+
+statewise['mortality rate']=statewise['Deaths']*100/statewise['Confirmed']
+
+
+# In[13]:
+
+
+statewise.head()
+
+
+# In[14]:
+
+
+statewise= statewise.sort_values('Confirmed',ascending = False)
+
+
+# In[15]:
+
+
+statewise.style.background_gradient(cmap = "cubehelix")
+
+
+# In[16]:
+
+
+top_10_active_cases = covid_df.groupby( by = 'State/UnionTerritory').max()[['Active_cases','Date']].sort_values(by = ['Active_cases'], ascending = False).reset_index()
+fig = plt.figure(figsize=(16,9))
+plt.title("top 10 covid cases in india",size=25)
+ax= sns.barplot(data =top_10_active_cases.iloc[:10],y ="Active_cases" ,x ="State/UnionTerritory", linewidth =2 ,edgecolor='red')
+plt.xlabel("STATES")
+plt.ylabel("TOTAL ACTIVE CASES")
+plt.show()
+
+
+# In[17]:
+
+
+# top 10 states with highest deaths
+
+
+# In[18]:
+
+
+top_10_states_deaths = covid_df.groupby( by = 'State/UnionTerritory').max()[['Deaths','Date']].sort_values( by =['Deaths'],ascending = False).reset_index()
+fig = plt.figure(figsize=(18,5))
+plt.title(" top 10 states with highest number of deaths" ,size= 30)
+ax = sns.barplot(data = top_10_states_deaths.iloc[:12], y= "Deaths" , x ="State/UnionTerritory" , linewidth = 3 , edgecolor= 'red')
+plt.xlabel("STATES")
+plt.ylabel("TOTAL DEATHS CASES")
+plt.show()
+
+
+# In[19]:
+
+
+# growth trend 
+
+
+# In[20]:
+
+
+fig = plt.figure(figsize = (12,6))
+ax = sns.lineplot( data = covid_df [covid_df['State/UnionTerritory'].isin(['Maharashtra','Karnataka','Kerela','Tamil Nadu','Uttar Pradesh'])],x='Date' , y= 'Active_cases', hue = 'State/UnionTerritory')
+ax.set_title("TOP 5 AFFECTED STATES IN INDIA",size =20)
+
+
+# In[21]:
+
+
+# vaccination 
+
+
+# In[22]:
+
+
+vaccine_df = pd.read_csv("C:/Users/DELL/Desktop/kothari.csv")
+
+
+# In[23]:
+
+
+vaccine_df
+
+
+# In[24]:
+
+
+vaccine_df.rename( columns={' Updated On ': ' Vaccine_date'}, inplace =True)
+
+
+# In[25]:
+
+
+vaccine_df.head(10)
+
+
+# In[26]:
+
+
+vaccine_df.isnull().sum()
+
+
+# In[27]:
+
+
+vaccination = vaccine_df.drop( columns=['Sputnik V (Doses Administered)','AEFI','18-44 Years (Doses Administered)','45-60 Years (Doses Administered)','60+ Years(Individuals Vaccinated)'],axis=1)
+
+
+# In[28]:
+
+
+vaccination.head()
+
+
+# In[ ]:
+
+
+
+
+
+# In[29]:
+
+
+# male vs female vaccination
+
+
+# In[30]:
+
+
+male = vaccination ["Male(Individuals Vaccinated)"].sum()
+female = vaccination["Female(Individuals Vaccinated)"].sum()
+px.pie( names = ["Male","Female"], values=[male,female],title =" male and female vaccination")
+
+
+# In[31]:
+
+
+# remove rows where state is "india"
+
+
+# In[32]:
+
+
+vaccine = vaccine_df[vaccine_df.State!='India']
+vaccine
+
+
+# In[33]:
+
+
+# most vaccinated state 
+
+
+# In[34]:
+
+
+max_vac = vaccine.groupby('State')['Total Individuals Vaccinated'].sum().to_frame('Total Individuals Vaccinated')
+max_vac = max_vac.sort_values('Total Individuals Vaccinated',ascending=False)[:5]
+max_vac
+
+
+# In[35]:
+
+
+
+fig = plt.figure(figsize=(16,9))
+plt.title("maximum vaccinated states in india",size=25)
+x= sns.barplot(data =max_vac.iloc[:10],y ="Total Individuals Vaccinated" ,x =max_vac.index, linewidth =2 ,edgecolor='red')
+plt.xlabel("STATES")
+plt.ylabel("VACCINATION")
+plt.show()
+
+
+# In[36]:
+
+
+# least vaccinated 
+
+
+# In[37]:
+
+
+min_vac = vaccine.groupby('State')['Total Individuals Vaccinated'].sum().to_frame('Total Individuals Vaccinated')
+min_vac = min_vac.sort_values('Total Individuals Vaccinated',ascending=True)[:5]
+min_vac
+
+
+# In[38]:
+
+
+
+fig = plt.figure(figsize=(16,9))
+plt.title("minimum vaccinated states in india",size=25)
+x= sns.barplot(data =max_vac.iloc[:10],y ="Total Individuals Vaccinated" ,x =min_vac.index, linewidth =2 ,edgecolor='red')
+plt.xlabel("STATES")
+plt.ylabel("VACCINATION")
+plt.show()
+
+
+# In[ ]:
+
+
+
+
